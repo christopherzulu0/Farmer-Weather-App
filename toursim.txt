@@ -26,6 +26,7 @@ SIGN_UP Process
 Name
 Password
 Email
+
 Travel Dates
 Budget
 Interests
