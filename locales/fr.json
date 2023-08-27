@@ -1,0 +1,21 @@
+{
+	"MainMenu": "CON Bonjour <b>{userName}</b> ! Sélectionnez une option ci-dessous : \n1. Visites et activités\n2. Mises à jour météo\n3. Services d'urgence\n4. Informations sur les transports\n5. Hébergement\n6. Recommandations basées sur la localisation\n7. Point d'intérêt\n8. Notifications(5)\n9. Changer la langue",
+	"unregisteredMenu": "CON Bienvenue sur le portail touristique de Livingstone. La meilleure attraction touristique en Zambie.\n1. Ouvrir un compte",
+	"Register": "CON Texte de votre choix pour l'inscription",
+	"Tours": "CON Texte de votre choix pour les visites",
+	"Weather": "CON Texte de votre choix pour la météo",
+	"Emergency": "CON Texte de votre choix pour les urgences",
+	"Transportation": "CON Texte de votre choix pour les transports",
+	"Accommodation": "CON Texte de votre choix pour l'hébergement",
+	"hi": "hi",
+	"select_option": "select_option",
+	"tours_activities": "tours_activities",
+	"weather_updates": "weather_updates",
+	"emergency_services": "emergency_services",
+	"transportation_info": "transportation_info",
+	"accommodation_listings": "accommodation_listings",
+	"location_based_recommendations": "location_based_recommendations",
+	"point_of_interest": "point_of_interest",
+	"notifications": "notifications",
+	"change_language": "change_language"
+}

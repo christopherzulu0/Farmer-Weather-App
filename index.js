@@ -1,5 +1,5 @@
 const express = require("express");
-
+const i18n = require("i18n");
 const router = express.Router();
 const {
     MainMenu,
@@ -12,11 +12,10 @@ const {
     LocationBased,
     POI,
     Notifications,
-    Languages,
+    Langauges,
+    Admin,
     unregisteredMenu
   } = require("./menu");
-
-  const {CircleSavings} = require("./CircleController")
   
   const {Transaction, Wallet, User,Savings} = require('./models/Schemas');
   const mongoose = require("mongoose");
@@ -24,6 +23,15 @@ const {
   const cors = require("cors");
   const app = express();
 
+  i18n.configure({
+    defaultLocale: "fr", // Set the default language (change "en" to your desired default language)
+    locales: ["en", "fr", "es","bem","nya"], // Available languages
+    directory: __dirname + "/locales", // Path to the locales folder
+    objectNotation: true, // Enable object notation
+  });
+  
+  // Set the default language for the app
+  app.use(i18n.init);
   
   //Configuring Express
   dotenv.config();
@@ -58,7 +66,7 @@ router.post("/", (req, res) => {
   
   
   
-  User.findOne({ number: phoneNumber })
+  User.findOne({phoneNumber: phoneNumber })
     .then( async (user) => {
       // AUTHENTICATION PARAMETERS
       let userName;
@@ -118,8 +126,11 @@ router.post("/", (req, res) => {
             response = await Notifications(textArray,phoneNumber);
               break; 
           case "9":
-            response = await Languages(textArray,phoneNumber);
+            response = await Langauges(textArray,phoneNumber);
                 break;  
+          case "10":
+                  response = await Admin(textArray,phoneNumber);
+                      break;  
           default:
               response = "END Invalid choice. Please try again";
         }
