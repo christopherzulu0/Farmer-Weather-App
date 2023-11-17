@@ -4,19 +4,22 @@ const router = express.Router();
 const {
     MainMenu,
     Register,
-    Tours,
-    Weather, 
-    Emergency, 
-    Transportation,
-    Accommodation,
-    LocationBased,
-    POI,
-    Notifications,
-    Langauges,
-    Admin,
     unregisteredMenu
   } = require("./menu");
-  
+
+  const {Accommodated} = require("./pages/Accomodations");
+  const {Tour} = require("./pages/Tours");
+  const {Weather} = require("./pages/WeatherUpdates");
+  const {Emergencies} = require("./pages/Emergency");
+  const {Transportation} = require("./pages/ModeOfTransport");
+  const {LocationBased} = require("./pages/LocationBasedAccomodation");
+  const {POI} = require("./pages/PointOfInterest");
+  const {Alert} = require("./pages/Notifiactions");
+  const {Langauges} = require("./pages/ChangeLanguage");
+  const {Admin} = require("./Admin/index");
+ 
+
+
   const {Transaction, Wallet, User,Savings} = require('./models/Schemas');
   const mongoose = require("mongoose");
   const dotenv = require("dotenv");
@@ -72,20 +75,23 @@ router.post("/", (req, res) => {
       let userName;
       let userRegistered;
       let response = "";
+      let Admins = "";
 
       if (!user) {
         userRegistered = false;
       } else {
         userRegistered = true;
         userName = user.Name;
+       Admins = user.Role;
       }
 
-      
+
+
       
 
       // MAIN LOGIC
       if (text == "" && userRegistered == true) {
-        response = MainMenu(userName);
+        response = MainMenu(userName,Admins);
       } else if (text == "" && userRegistered == false) {
         response = unregisteredMenu();
       } else if (text != "" && userRegistered == false) {
@@ -102,19 +108,19 @@ router.post("/", (req, res) => {
 
         switch (textArray[0]) {
           case "1":
-            response = await Tours(textArray, phoneNumber);
+            response = await Tour(textArray, phoneNumber);
             break;
           case "2": 
             response = await Weather(textArray, phoneNumber);
               break;
           case "3":
-            response = await Emergency(textArray,phoneNumber);
+            response = await Emergencies(textArray,phoneNumber);
               break;
           case "4":
             response = await Transportation(textArray, phoneNumber);
               break;
           case "5":
-            response = await Accommodation(textArray, phoneNumber);
+            response = await Accommodated(textArray, phoneNumber);
               break;
           case "6":
             response = await LocationBased(textArray,phoneNumber);
@@ -123,7 +129,7 @@ router.post("/", (req, res) => {
             response = await POI(textArray,phoneNumber);
             break;  
           case "8":
-            response = await Notifications(textArray,phoneNumber);
+            response = await Alert(textArray,phoneNumber);
               break; 
           case "9":
             response = await Langauges(textArray,phoneNumber);

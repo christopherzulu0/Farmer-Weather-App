@@ -109,6 +109,10 @@ const UserSchema = mongoose.Schema({
     type:Number,
     required: true
   },
+  Role :{
+     type:String,
+     default: 'User'
+  },
   destinations: [DestinationSchema],
   emergencies: [EmergencySchema],
   transportations: [TransportationSchema],
