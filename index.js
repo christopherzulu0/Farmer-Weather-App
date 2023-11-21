@@ -82,10 +82,14 @@ router.post("/", (req, res) => {
       } else {
         userRegistered = true;
         userName = user.Name;
-       Admins = user.Role;
+       
       }
 
-
+      Admins = await User.findOne({ phoneNumber: phoneNumber });
+      checkRole = Admins ? Admins.Role : null;
+      
+      // Check if the user has the 'Admin' role
+      let isAdmin = checkRole === 'Admin';
 
       
 
