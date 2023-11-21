@@ -46,7 +46,7 @@ const menu = {
                  `;
       return response;
 
-    }else if(!Admins){
+    }else{
       const response = `CON Hi <b>${userName}</b>! 
                          Select an option below:
                     1. Tours
