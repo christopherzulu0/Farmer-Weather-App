@@ -7,98 +7,68 @@ const {
     unregisteredMenu
   } = require("./menu");
 
-  const {Accommodated} = require("./pages/Accomodations");
-  const {Tour} = require("./pages/Tours");
-  const {Weather} = require("./pages/WeatherUpdates");
-  const {Emergencies} = require("./pages/Emergency");
-  const {Transportation} = require("./pages/ModeOfTransport");
-  const {LocationBased} = require("./pages/LocationBasedAccomodation");
-  const {POI} = require("./pages/PointOfInterest");
-  const {Alert} = require("./pages/Notifiactions");
-  const {Langauges} = require("./pages/ChangeLanguage");
-  const {Admin} = require("./Admin/index");
- 
+const { Weather } = require("./pages/WeatherUpdates");
+const { Crops } = require("./pages/CropManagement");
+const { Notify } = require("./pages/Notifications");
+
+const prisma = require('./prisma/client');
+const dotenv = require("dotenv");
+const cors = require("cors");
+const app = express();
+
+i18n.configure({
+  defaultLocale: "en", // Set the default language
+  locales: ["en", "fr", "es", "bem", "nya"], // Available languages
+  directory: __dirname + "/locales", // Path to the locales folder
+  objectNotation: true, // Enable object notation
+});
+
+// Set the default language for the app
+app.use(i18n.init);
+
+// Configuring Express
+dotenv.config();
+app.use(cors());
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
 
 
-  const {Transaction, Wallet, User,Savings} = require('./models/Schemas');
-  const mongoose = require("mongoose");
-  const dotenv = require("dotenv");
-  const cors = require("cors");
-  const app = express();
 
-  i18n.configure({
-    defaultLocale: "fr", // Set the default language (change "en" to your desired default language)
-    locales: ["en", "fr", "es","bem","nya"], // Available languages
-    directory: __dirname + "/locales", // Path to the locales folder
-    objectNotation: true, // Enable object notation
-  });
-  
-  // Set the default language for the app
-  app.use(i18n.init);
-  
-  //Configuring Express
-  dotenv.config();
-  app.use(cors());
-  app.use(express.json());
-  app.use(express.urlencoded({ extended: false }));
-  mongoose.set('strictQuery', true);
-  const connectionString = process.env.DB_URI;
-  
-  //Configure MongoDB Database
-  mongoose
-    .connect(connectionString, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    })
-    .then((res) => {
-      console.log("MongoDB Running Successfully");
-    })
-    .catch((err) => {
-      console.log({ err });
-      console.log("MongoDB not Connected ");
+router.post("/", async (req, res) => {
+  try {
+    const { sessionId, serviceCode, phoneNumber, text } = req.body;
+
+    console.log('#', req.body);
+
+    // Find user with Prisma
+    const user = await prisma.user.findUnique({
+      where: { phoneNumber: phoneNumber }
     });
 
+    // AUTHENTICATION PARAMETERS
+    let userName;
+    let userRegistered;
+    let response = "";
+    let userRole = "";
 
+    if (!user) {
+      userRegistered = false;
+    } else {
+      userRegistered = true;
+      userName = user.name;
+      userRole = user.role;
+    }
 
-router.post("/", (req, res) => {
-  
-
-  const { sessionId, serviceCode, phoneNumber, text } = req.body;
-
-  console.log('#', req.body);
-  
-  
-  
-  User.findOne({phoneNumber: phoneNumber })
-    .then( async (user) => {
-      // AUTHENTICATION PARAMETERS
-      let userName;
-      let userRegistered;
-      let response = "";
-      let Admins = "";
-
-      if (!user) {
-        userRegistered = false;
+    // MAIN LOGIC
+    if (text == "" && userRegistered == true) {
+      response = MainMenu(userName, userRole);
+    } else if (text == "" && userRegistered == false) {
+      response = unregisteredMenu();
+    } else if (text != "" && userRegistered == false) {
+      // Ensure text is defined before splitting
+      if (text === undefined) {
+        response = "END An error occurred. Please try again.";
       } else {
-        userRegistered = true;
-        userName = user.Name;
-       
-      }
-
-      Admins = await User.findOne({ phoneNumber: phoneNumber });
-      checkRole = Admins ? Admins.Role : null;
-      
-      // Check if the user has the 'Admin' role
-      let isAdmin = checkRole === 'Admin';
-
-      
-
-      // MAIN LOGIC
-      if (text == "" && userRegistered == true) {
-        response = MainMenu(userName,Admins);
-      } else if (text == "" && userRegistered == false) {
-        response = unregisteredMenu();
-      } else if (text != "" && userRegistered == false) {
         const textArray = text.split("*");
         switch (textArray[0]) {
           case "1":
@@ -107,59 +77,65 @@ router.post("/", (req, res) => {
           default:
             response = "END Invalid choice. Please try again";
         }
+      }
+    } else {
+      // Ensure text is defined before splitting
+      if (text === undefined) {
+        response = "END An error occurred. Please try again.";
       } else {
         const textArray = text.split("*");
 
         switch (textArray[0]) {
           case "1":
-            response = await Tour(textArray, phoneNumber);
-            break;
-          case "2": 
             response = await Weather(textArray, phoneNumber);
-              break;
+            break;
+          case "2":
+            response = await Crops(textArray, phoneNumber);
+            break;
           case "3":
-            response = await Emergencies(textArray,phoneNumber);
-              break;
+            // Directly access weather alerts by adding "3" to the textArray
+            const weatherAlertsArray = [...textArray];
+            weatherAlertsArray.push("3");
+            response = await Weather(weatherAlertsArray, phoneNumber);
+            break;
           case "4":
-            response = await Transportation(textArray, phoneNumber);
-              break;
+            // Directly access add new crop functionality
+            const addCropArray = [...textArray];
+            // Add "add_crop" as a special signal
+            addCropArray.push("add_crop");
+            response = await Crops(addCropArray, phoneNumber);
+            break;
           case "5":
-            response = await Accommodated(textArray, phoneNumber);
-              break;
-          case "6":
-            response = await LocationBased(textArray,phoneNumber);
-            break;  
-          case "7":
-            response = await POI(textArray,phoneNumber);
-            break;  
-          case "8":
-            response = await Alert(textArray,phoneNumber);
-              break; 
-          case "9":
-            response = await Langauges(textArray,phoneNumber);
-                break;  
-          case "10":
-                  response = await Admin(textArray,phoneNumber);
-                      break;  
+            response = await Notify(textArray, phoneNumber);
+            break;
           default:
-              response = "END Invalid choice. Please try again";
+            response = "END Invalid choice. Please try again";
         }
-
       }
-  
-  // Print the response onto the page so that our SDK can read it
-  res.set("Content-Type: text/plain");
-  res.send(response);
-  // DONE!!!
-})
+    }
 
+    // Print the response onto the page so that our SDK can read it
+    res.set("Content-Type", "text/plain");
+    res.send(response);
 
+  } catch (error) {
+    console.error("Error processing request:", error);
 
+    // Check for specific error types
+    let errorMessage = "END An error occurred. Please try again later.";
 
+    // Handle ngrok offline error
+    if (error.message && error.message.includes("ECONNREFUSED")) {
+      errorMessage = "END Service temporarily unavailable. Please try again later.";
+    } else if (error.response && error.response.status === 404) {
+      errorMessage = "END Service endpoint not found. Please try again later.";
+    } else if (error.message && error.message.includes("ngrok")) {
+      errorMessage = "END Service connection issue. Please try again later.";
+    }
 
-.catch((err) => {
-    console.log({ err });
-  });
+    res.set("Content-Type", "text/plain");
+    res.send(errorMessage);
+  }
 });
 
 module.exports = router;

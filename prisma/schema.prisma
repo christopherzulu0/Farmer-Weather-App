@@ -1,0 +1,83 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           Int            @id @default(autoincrement())
+  name         String
+  phoneNumber  String         @unique
+  email        String?
+  pin          String
+  role         String         @default("Farmer")
+  location     String
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  farms        Farm[]
+  weatherAlerts WeatherAlert[]
+  cropAdvice   CropAdvice[]
+}
+
+model Farm {
+  id           Int            @id @default(autoincrement())
+  name         String
+  location     String
+  size         Float?
+  userId       Int
+  user         User           @relation(fields: [userId], references: [id])
+  crops        Crop[]
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+}
+
+model Crop {
+  id           Int            @id @default(autoincrement())
+  name         String
+  plantingDate DateTime?
+  harvestDate  DateTime?
+  farmId       Int
+  farm         Farm           @relation(fields: [farmId], references: [id])
+  cropAdvice   CropAdvice[]
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+}
+
+model WeatherData {
+  id           Int            @id @default(autoincrement())
+  location     String
+  temperature  Float
+  humidity     Float?
+  description  String
+  windSpeed    Float?
+  rainfall     Float?
+  date         DateTime       @default(now())
+  forecast     Boolean        @default(false)
+}
+
+model WeatherAlert {
+  id           Int            @id @default(autoincrement())
+  userId       Int
+  user         User           @relation(fields: [userId], references: [id])
+  message      String
+  sentAt       DateTime       @default(now())
+  alertType    String
+  acknowledged Boolean        @default(false)
+}
+
+model CropAdvice {
+  id           Int            @id @default(autoincrement())
+  cropId       Int
+  crop         Crop           @relation(fields: [cropId], references: [id])
+  userId       Int
+  user         User           @relation(fields: [userId], references: [id])
+  advice       String
+  weatherCondition String
+  createdAt    DateTime       @default(now())
+}

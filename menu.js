@@ -1,174 +1,219 @@
-const { User,Destination,Emergency,Transportation,Accommodation,Recommendations,PointOfInterest} = require('./models/Schemas');
-
-const countryCode = require("./util/countryCode");
-const bcrypt = require("bcrypt");
+const prisma = require('./prisma/client');
+const crypto = require("crypto");
 const qs = require("qs");
 const { response } = require('express');
 const i18n = require("i18n");
+const { getCurrentWeather, getAgriculturalAdvice } = require('./util/weatherService');
+const { sendWeatherAlert } = require('./util/africasTalking');
+
+// Helper function to hash passwords using crypto instead of bcrypt
+const hashPassword = (password) => {
+  const salt = crypto.randomBytes(16).toString('hex');
+  const hash = crypto.pbkdf2Sync(password, salt, 1000, 64, 'sha512').toString('hex');
+  return `${salt}:${hash}`;
+};
+
+// Helper function to verify passwords
+const verifyPassword = (password, hashedPassword) => {
+  const [salt, storedHash] = hashedPassword.split(':');
+  const hash = crypto.pbkdf2Sync(password, salt, 1000, 64, 'sha512').toString('hex');
+  return storedHash === hash;
+};
 
 i18n.configure({
-  defaultLocale: 'fr', // Set the default language code here (e.g., 'en' for English)
+  defaultLocale: 'en', // Set the default language code here
   directory: __dirname + '/locales', // Specify the directory where your language files are located
 });
 
+// Function to get crop advice based on weather
+const getCropAdvice = async (cropType, location) => {
+  try {
+    // Get current weather for the location
+    const weatherData = await getCurrentWeather(location);
 
+    // Get agricultural advice based on weather and crop type
+    const advice = getAgriculturalAdvice(cropType, weatherData);
 
-const fetchLocationBasedRecommendations = async (currentLocation) => {
-  // Add your code here to fetch location-based recommendations based on the current location
-  // You can query a database or make an API request to retrieve the recommendations
-
-  // Return the location-based recommendations as an array of objects
-  return [
-    { name: 'Ndola', description: 'Description of Recommendation 1' },
-    { name: 'Recommendation 2', description: 'Description of Recommendation 2' },
-    { name: 'Recommendation 3', description: 'Description of Recommendation 3' },
-  ];
+    return {
+      cropType,
+      location,
+      weather: weatherData,
+      advice
+    };
+  } catch (error) {
+    console.error('Error getting crop advice:', error);
+    return {
+      cropType,
+      location,
+      error: 'Unable to fetch weather data. Please try again later.'
+    };
+  }
 };
 
+// Function to get farm information
+const getFarmInfo = async (userId) => {
+  try {
+    const farms = await prisma.farm.findMany({
+      where: { userId: parseInt(userId) },
+      include: { crops: true }
+    });
 
-const fetchPOIInformation = async (poiName) => {
-  // Add your code here to fetch information about the specific point of interest
-  // You can query a database or make an API request to retrieve the information
-
-  // Return the information as an object
-  return {
-    name: poiName,
-    description: 'Description of the point of interest',
-    location: 'Location of the point of interest',
-    contact: 'Contact information of the point of interest',
-  };
-}
+    return farms;
+  } catch (error) {
+    console.error('Error fetching farm information:', error);
+    return [];
+  }
+};
 
 const menu = {
-  MainMenu: (userName,Admins) => {
-    if(Admins){
-    const  response = `CON 10. Enter(10) to View Dashboard
-                 `;
+  MainMenu: (userName, userRole) => {
+    if(userRole === 'Admin'){
+      const response = `CON Welcome Admin ${userName}
+1. Send Weather Alerts
+2. Manage Crop Advice
+3. Back to Main Menu`;
       return response;
-
-    }else{
-      const response = `CON Hi <b>${userName}</b>! 
-                         Select an option below:
-                    1. Tours
-                    2. Weather Updates
-                    3. Emergency 
-                    4. Transportation 
-                    5. Accommodations
-                    6. Location Based Recommendations
-                    7. Point Of interest
-                    8. Notifications(5)
-                    9. Change Language
-
-            `;
-
-    return response;
+    } else {
+      const response = `CON Hi ${userName}! 
+Welcome to Farmers Weather Service
+1. Weather Updates
+2. Crop Advice
+3. Weather Alerts
+4. Add New Crop
+5. Notifications`;
+      return response;
     }
-    
   },
-  unregisteredMenu: () => {
-    const response = `CON Welcome to Livingstone Tourism Portal. The best tourist attraction in Zambia.
-            1. Open an account
-            `;
 
+  unregisteredMenu: () => {
+    const response = `CON Welcome to Farmers Weather Service. Get weather updates and agricultural advice for your farm.
+1. Register as a Farmer`;
     return response;
   },
   Register: async (textArray, phoneNumber) => {
     const level = textArray.length;
     let response = "";
-    
+
     switch (level) {
       case 1:
-        response = "CON What is your name";
+        response = "CON What is your full name?";
         break;
       case 2:
-        response = "CON What is your email address";
+        response = "CON What is your email address? (optional, reply with 0 to skip)";
         break;
       case 3:
-        response = "CON What is your travel month";
+        response = "CON What is your location/district?";
         break;
       case 4:
-        response = "CON What is your trip budget";
+        response = "CON What is your main crop?";
         break;
       case 5:
-        response = "CON What is your travel interest";
+        response = "CON What is the size of your farm? (in hectares)";
         break;
       case 6:
-          response = "CON Set a login pin(4 Digits)";
-          break;
+        response = "CON Set a login PIN (4 Digits)";
+        break;
       case 7:
         response = "CON Please confirm your PIN:";
         break;
       case 8:
+        const email = textArray[2] === '0' ? 'Not provided' : textArray[2];
         response = `CON Confirm Your Details:
-                    Name: ${textArray[1]}
-                    Email: ${textArray[2]}
-                    Travel Month: ${textArray[3]}
-                    Budget:${textArray[4]},
-                    Travel Interest: ${textArray[5]}
-                    Pin: ${textArray[6]}
+Name: ${textArray[1]}
+Email: ${email}
+Location: ${textArray[3]}
+Main Crop: ${textArray[4]}
+Farm Size: ${textArray[5]} hectares
+PIN: ${textArray[6]}
 
-                    1.Confirm & continue
-                   `;
+1. Confirm & continue
+2. Cancel & start over`;
         break;
       case 9:
         if(textArray[8] == 1){
-        const pin = textArray[6];
-        const confirmPin = textArray[7];
-        // Check if the name is strictly alphabets via regex
-      
-        // Check if the pin is 5 characters long and is purely numerical
-         if (pin.toString().length != 4 || isNaN(pin)) {
-          response = "END Your must be 4 digits.Please try again!";
-        }
-        // Check if the pin and confirmed pin is the same
-        else if (pin != confirmPin) {
-          response = "END Your pin does not match. Please try again";
-        } else {
-          // proceed to register user
-          async function createUser() {
-            const userData = {
-              Name: textArray[1],
-              Email: textArray[2],
-              Travel_Month: textArray[3],
-              Budget:textArray[4],
-              Travel_Interest: textArray[5],
-              pin: textArray[7],
-              phoneNumber: phoneNumber
-            };
-    
-            // hashes the user pin and updates the userData object
-            bcrypt.hash(userData.pin, 10, (err, hash) => {
-              userData.pin = hash;
-            });
-    
-            // create user and register to DB
-            let user = await User.create(userData);
+          const pin = textArray[6];
+          const confirmPin = textArray[7];
 
-            return user;
+          // Check if the pin is 4 characters long and is purely numerical
+          if (pin.toString().length != 4 || isNaN(pin)) {
+            response = "END Your PIN must be 4 digits. Please try again!";
           }
-    
-          // Assigns the created user to a variable for manipulation
-          let user = await createUser();
-          // If user creation failed
-          if (!user) {
-            response = "END An unexpected error occurred... Please try again later";
+          // Check if the pin and confirmed pin are the same
+          else if (pin != confirmPin) {
+            response = "END Your PIN does not match. Please try again";
+          } else {
+            try {
+              console.log('Attempting to register user:', {
+                name: textArray[1],
+                email: textArray[2] === '0' ? null : textArray[2],
+                phoneNumber: phoneNumber,
+                location: textArray[3],
+                mainCrop: textArray[4],
+                farmSize: textArray[5]
+              });
+
+              // Hash the PIN using crypto instead of bcrypt
+              const hashedPin = hashPassword(pin);
+
+              // Create user in database using Prisma
+              const email = textArray[2] === '0' ? null : textArray[2];
+              const user = await prisma.user.create({
+                data: {
+                  name: textArray[1],
+                  email: email,
+                  phoneNumber: phoneNumber,
+                  location: textArray[3],
+                  pin: hashedPin,
+                  role: 'Farmer'
+                }
+              });
+
+              console.log('User created successfully:', user);
+
+              // Create the user's first farm
+              const farm = await prisma.farm.create({
+                data: {
+                  name: `${textArray[1]}'s Farm`,
+                  location: textArray[3],
+                  size: parseFloat(textArray[5]),
+                  userId: user.id,
+                  crops: {
+                    create: [{
+                      name: textArray[4]
+                    }]
+                  }
+                }
+              });
+
+              console.log('Farm created successfully:', farm);
+
+              response = `END Congratulations ${user.name}, you've been successfully registered as a farmer. Dial *384*82933# to start using our weather service.`;
+            } catch (error) {
+              console.error('Error registering user:', error);
+
+              // More detailed error message based on the error type
+              if (error.code === 'P2002') {
+                response = "END This phone number is already registered. Please try with a different number.";
+              } else if (error.code === 'P2003') {
+                response = "END Error creating farm. Please try again later.";
+              } else {
+                response = "END An unexpected error occurred. Please try again later.";
+              }
+            }
           }
-          // if user creation was successful
-          else {
-            let userName = user.Name;
-            let phoneNumber = user.number;
-            
-    
-            response = `END Congratulations ${userName}, You've been successfully registered.Dial *384*82933# to start using our services`;
-          }
-        }
+        } else if (textArray[8] == 2) {
+          // User chose to cancel and start over
+          response = "END Registration cancelled. Please dial the service code again to restart registration.";
+        } else {
+          // Invalid option selected
+          response = "END Invalid option selected. Please dial the service code again to restart registration.";
         }
         break;
       default:
         break;
     }
     return response;
-  }, 
+  },
 };
 
 module.exports = menu;
