@@ -7,6 +7,7 @@ A weather updates and agricultural advice application for farmers via USSD.
 - Weather updates and forecasts
 - Farm management
 - Crop management
+- Crop calendar and planting advice
 - Market prices
 - Weather alerts
 - Emergency assistance
@@ -158,6 +159,93 @@ If you're having trouble connecting to Africa's Talking, try the following steps
 9. **Contact support**:
    - If all else fails, contact Africa's Talking support with the error details
    - Include the error messages from the connection test
+
+## Crop Calendar Functionality
+
+The application includes an AI-powered crop calendar feature that provides farmers with personalized advice on optimal planting times for various crops based on their location and current weather conditions.
+
+### Features
+
+- **AI-Powered Recommendations**: Get intelligent crop recommendations using OpenAI's advanced language models.
+- **Personalized Planting Advice**: Receive tailored advice specific to your crop, location, and current weather conditions.
+- **Optimal Planting Windows**: Get recommended planting dates for specific crops based on AI analysis of growing requirements and local weather conditions.
+- **Weather-Adjusted Recommendations**: Planting windows are dynamically adjusted based on current temperature, rainfall, and other weather factors.
+- **Harvest Date Predictions**: Estimate when crops will be ready for harvest based on AI-analyzed growing periods.
+- **Seasonal Crop Recommendations**: Get AI-suggested crops that are most suitable to plant in the current season at your location.
+
+### AI Integration
+
+The crop calendar uses OpenAI's GPT models to provide intelligent agricultural advice:
+
+- **Dynamic Crop Information**: Instead of relying on static data, the system uses AI to generate crop information based on the latest agricultural knowledge.
+- **Contextual Understanding**: The AI considers multiple factors including crop type, location, current weather, and seasonal patterns.
+- **Fallback Mechanism**: If the AI service is unavailable, the system falls back to traditional methods to ensure continuous service.
+- **Data Caching**: AI-generated crop information is cached in the database to reduce API calls and provide faster responses.
+
+### Using the Crop Calendar
+
+Farmers can access the AI-powered crop calendar through the USSD menu:
+
+1. Dial the USSD code to access the application
+2. Select "Crop Management" from the main menu
+3. Select "Crop Calendar" from the crop management menu
+4. Choose from the following options:
+   - View recommended crops for the current season
+   - Get planting advice for a specific crop
+
+### Setting Up OpenAI Integration
+
+To use the AI-powered features, you need to install the OpenAI module and set up an API key:
+
+1. **Install the OpenAI module**:
+   - Run the following command in your project directory:
+     ```
+     npm install openai
+     ```
+   - This will install the OpenAI Node.js client library
+
+2. **Create an OpenAI account**:
+   - Go to [OpenAI Platform](https://platform.openai.com/signup)
+   - Sign up for an account
+
+3. **Get your API Key**:
+   - After signing up, go to [API Keys](https://platform.openai.com/api-keys)
+   - Create a new secret key
+   - Copy the key (you won't be able to see it again)
+
+4. **Update your .env file**:
+   - Open your `.env` file
+   - Add your OpenAI API key: `OPENAI_API_KEY=your_openai_api_key_here`
+   - Make sure there are no spaces or quotes around the API key
+
+5. **Verify your setup**:
+   - Run the OpenAI setup test to verify that everything is configured correctly:
+     ```
+     npm run test:openai
+     ```
+   - This will check if the module is installed and the API key is properly configured
+
+6. **Restart the application**:
+   - The application will automatically use the AI-powered features when the module is installed and an API key is available
+
+### Testing the Crop Calendar
+
+To test the crop calendar functionality, run:
+
+```
+npm run test:crop-calendar
+```
+
+This will execute a series of tests that verify:
+- AI-powered crop information retrieval
+- Optimal planting window calculations
+- Personalized planting advice generation
+- Seasonal crop recommendations
+
+Note: 
+- The tests that interact with the AccuWeather API require a valid API key to be set in your `.env` file.
+- The AI-powered features require a valid OpenAI API key to be set in your `.env` file.
+- If the OpenAI API key is not set, the system will fall back to traditional methods.
 
 ## License
 

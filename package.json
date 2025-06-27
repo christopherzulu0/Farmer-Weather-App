@@ -10,7 +10,9 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
-    "test:at": "node util/test-at-connection.js"
+    "test:at": "node util/test-at-connection.js",
+    "test:crop-calendar": "node test-crop-calendar.js",
+    "test:openai": "node test-openai-setup.js"
   },
   "dependencies": {
     "@prisma/client": "^5.0.0",
@@ -22,6 +24,7 @@
     "express": "^4.18.2",
     "i18n": "^0.15.1",
     "nodemon": "^2.0.20",
+    "openai": "^4.20.1",
     "qs": "^6.11.0"
   },
   "devDependencies": {
