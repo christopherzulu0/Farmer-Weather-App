@@ -7,18 +7,18 @@ const { getCurrentWeather, getAgriculturalAdvice } = require('./util/weatherServ
 const { sendWeatherAlert } = require('./util/africasTalking');
 
 // Helper function to hash passwords using crypto instead of bcrypt
-const hashPassword = (password) => {
-  const salt = crypto.randomBytes(16).toString('hex');
-  const hash = crypto.pbkdf2Sync(password, salt, 1000, 64, 'sha512').toString('hex');
-  return `${salt}:${hash}`;
-};
+// const hashPassword = (password) => {
+//   const salt = crypto.randomBytes(16).toString('hex');
+//   const hash = crypto.pbkdf2Sync(password, salt, 1000, 64, 'sha512').toString('hex');
+//   return `${salt}:${hash}`;
+// };
 
 // Helper function to verify passwords
-const verifyPassword = (password, hashedPassword) => {
-  const [salt, storedHash] = hashedPassword.split(':');
-  const hash = crypto.pbkdf2Sync(password, salt, 1000, 64, 'sha512').toString('hex');
-  return storedHash === hash;
-};
+// const verifyPassword = (password, hashedPassword) => {
+//   const [salt, storedHash] = hashedPassword.split(':');
+//   const hash = crypto.pbkdf2Sync(password, salt, 1000, 64, 'sha512').toString('hex');
+//   return storedHash === hash;
+// };
 
 i18n.configure({
   defaultLocale: 'en', // Set the default language code here
@@ -26,44 +26,44 @@ i18n.configure({
 });
 
 // Function to get crop advice based on weather
-const getCropAdvice = async (cropType, location) => {
-  try {
-    // Get current weather for the location
-    const weatherData = await getCurrentWeather(location);
+// const getCropAdvice = async (cropType, location) => {
+//   try {
+//     // Get current weather for the location
+//     const weatherData = await getCurrentWeather(location);
 
-    // Get agricultural advice based on weather and crop type
-    const advice = getAgriculturalAdvice(cropType, weatherData);
+//     // Get agricultural advice based on weather and crop type
+//     const advice = getAgriculturalAdvice(cropType, weatherData);
 
-    return {
-      cropType,
-      location,
-      weather: weatherData,
-      advice
-    };
-  } catch (error) {
-    console.error('Error getting crop advice:', error);
-    return {
-      cropType,
-      location,
-      error: 'Unable to fetch weather data. Please try again later.'
-    };
-  }
-};
+//     return {
+//       cropType,
+//       location,
+//       weather: weatherData,
+//       advice
+//     };
+//   } catch (error) {
+//     console.error('Error getting crop advice:', error);
+//     return {
+//       cropType,
+//       location,
+//       error: 'Unable to fetch weather data. Please try again later.'
+//     };
+//   }
+// };
 
-// Function to get farm information
-const getFarmInfo = async (userId) => {
-  try {
-    const farms = await prisma.farm.findMany({
-      where: { userId: parseInt(userId) },
-      include: { crops: true }
-    });
+// // Function to get farm information
+// const getFarmInfo = async (userId) => {
+//   try {
+//     const farms = await prisma.farm.findMany({
+//       where: { userId: parseInt(userId) },
+//       include: { crops: true }
+//     });
 
-    return farms;
-  } catch (error) {
-    console.error('Error fetching farm information:', error);
-    return [];
-  }
-};
+//     return farms;
+//   } catch (error) {
+//     console.error('Error fetching farm information:', error);
+//     return [];
+//   }
+// };
 
 const menu = {
   MainMenu: (userName, userRole) => {
@@ -110,13 +110,13 @@ Welcome to Farmers Weather Service
       case 5:
         response = "CON What is the size of your farm? (in hectares)";
         break;
+      // case 6:
+      //   response = "CON Set a login PIN (4 Digits)";
+      //   break;
+      // case 7:
+      //   response = "CON Please confirm your PIN:";
+      //   break;
       case 6:
-        response = "CON Set a login PIN (4 Digits)";
-        break;
-      case 7:
-        response = "CON Please confirm your PIN:";
-        break;
-      case 8:
         const email = textArray[2] === '0' ? 'Not provided' : textArray[2];
         response = `CON Confirm Your Details:
 Name: ${textArray[1]}
@@ -124,24 +124,12 @@ Email: ${email}
 Location: ${textArray[3]}
 Main Crop: ${textArray[4]}
 Farm Size: ${textArray[5]} hectares
-PIN: ${textArray[6]}
 
 1. Confirm & continue
 2. Cancel & start over`;
         break;
-      case 9:
-        if(textArray[8] == 1){
-          const pin = textArray[6];
-          const confirmPin = textArray[7];
-
-          // Check if the pin is 4 characters long and is purely numerical
-          if (pin.toString().length != 4 || isNaN(pin)) {
-            response = "END Your PIN must be 4 digits. Please try again!";
-          }
-          // Check if the pin and confirmed pin are the same
-          else if (pin != confirmPin) {
-            response = "END Your PIN does not match. Please try again";
-          } else {
+      case 7:
+        if(textArray[6] == 1){
             try {
               console.log('Attempting to register user:', {
                 name: textArray[1],
@@ -153,7 +141,7 @@ PIN: ${textArray[6]}
               });
 
               // Hash the PIN using crypto instead of bcrypt
-              const hashedPin = hashPassword(pin);
+           
 
               // Create user in database using Prisma
               const email = textArray[2] === '0' ? null : textArray[2];
@@ -162,8 +150,7 @@ PIN: ${textArray[6]}
                   name: textArray[1],
                   email: email,
                   phoneNumber: phoneNumber,
-                  location: textArray[3],
-                  pin: hashedPin,
+                  location: textArray[3],       
                   role: 'Farmer'
                 }
               });
@@ -200,7 +187,7 @@ PIN: ${textArray[6]}
                 response = "END An unexpected error occurred. Please try again later.";
               }
             }
-          }
+          // }
         } else if (textArray[8] == 2) {
           // User chose to cancel and start over
           response = "END Registration cancelled. Please dial the service code again to restart registration.";

@@ -137,6 +137,7 @@ Day 5: Partly cloudy, 25°C`;
                 await prisma.cropAdvice.create({
                     data: {
                         cropId: crop.id,
+                        name: crop.name,
                         userId: user.id,
                         advice: advice,
                         weatherCondition: weatherData.description

@@ -28,26 +28,13 @@ const CropManagement = {
                 return "END You don't have any farms yet. Please add a farm first.";
             }
 
-            // Check for special "add_crop" signal
-            if (level === 2 && textArray[1] === "add_crop") {
-                if (user.farms.length === 1) {
-                    // If user has only one farm, skip farm selection
-                    response = `CON Enter crop name for farm "${user.farms[0].name}":`;
-                } else {
-                    response = `CON Select farm to add crop to:
-                    ${user.farms.map((farm, index) => `${index + 1}. ${farm.name}`).join('\n')}`;
-                }
-                return response;
-            }
-
             if (level === 1) {
                 // Main crop management menu
                 response = `CON Crop Management:
                 1. View all crops
-                2. Add a new crop
-                3. Get crop advice
-                4. Crop calendar
-                5. Back to Main Menu`;
+                2. Get crop advice
+                3. Crop calendar
+                4. Back to Main Menu`;
                 return response;
             }
 
@@ -107,7 +94,7 @@ const CropManagement = {
                 response = `END Crop: ${crop.name}
                 Farm: ${crop.farmName}
                 Location: ${crop.farmLocation}
-                Planting Date: ${crop.plantingDate ? new Date(crop.plantingDate).toLocaleDateString() : 'Not set'}
+                Planting Date: ${crop.plantingDate || 'Not set'}
                 Harvest Date: ${crop.harvestDate ? new Date(crop.harvestDate).toLocaleDateString() : 'Not set'}
 
                 Current Weather: ${weatherData.description}, ${weatherData.temperature}°C
@@ -116,99 +103,8 @@ const CropManagement = {
                 return response;
             }
 
-            // Add a new crop - select farm
-            else if (level === 2 && textArray[1] === '2') {
-                if (user.farms.length === 1) {
-                    // If user has only one farm, skip farm selection
-                    response = `CON Enter crop name for farm "${user.farms[0].name}":`;
-                } else {
-                    response = `CON Select farm to add crop to:
-                    ${user.farms.map((farm, index) => `${index + 1}. ${farm.name}`).join('\n')}`;
-                }
-                return response;
-            }
-
-            // Add a new crop - enter crop name (for multiple farms)
-            else if ((level === 3 && textArray[1] === '2' && user.farms.length > 1) ||
-                     (level === 3 && textArray[1] === 'add_crop' && user.farms.length > 1)) {
-                const farmIndex = parseInt(textArray[2]) - 1;
-                if (isNaN(farmIndex) || farmIndex < 0 || farmIndex >= user.farms.length) {
-                    return "END Invalid farm selection.";
-                }
-
-                response = `CON Enter crop name for farm "${user.farms[farmIndex].name}":`;
-                return response;
-            }
-
-            // Add a new crop - enter planting date (for single farm)
-            else if ((level === 3 && textArray[1] === '2' && user.farms.length === 1) ||
-                     (level === 3 && textArray[1] === 'add_crop' && user.farms.length === 1)) {
-                response = `CON Enter planting date for ${textArray[2]} (DD/MM/YYYY) or 0 to skip:`;
-                return response;
-            }
-
-            // Add a new crop - enter planting date (for multiple farms)
-            else if ((level === 4 && textArray[1] === '2' && user.farms.length > 1) ||
-                     (level === 4 && textArray[1] === 'add_crop' && user.farms.length > 1)) {
-                response = `CON Enter planting date for ${textArray[3]} (DD/MM/YYYY) or 0 to skip:`;
-                return response;
-            }
-
-            // Add a new crop - save crop (for single farm)
-            else if ((level === 4 && textArray[1] === '2' && user.farms.length === 1) ||
-                     (level === 4 && textArray[1] === 'add_crop' && user.farms.length === 1)) {
-                const cropName = textArray[2];
-                const plantingDateStr = textArray[3];
-
-                let plantingDate = null;
-                if (plantingDateStr !== '0') {
-                    // Parse date in DD/MM/YYYY format
-                    const [day, month, year] = plantingDateStr.split('/').map(Number);
-                    plantingDate = new Date(year, month - 1, day);
-                }
-
-                // Add the crop to the farm
-                await prisma.crop.create({
-                    data: {
-                        name: cropName,
-                        plantingDate: plantingDate,
-                        farmId: user.farms[0].id
-                    }
-                });
-
-                response = `END Crop "${cropName}" has been added to farm "${user.farms[0].name}" successfully!`;
-                return response;
-            }
-
-            // Add a new crop - save crop (for multiple farms)
-            else if ((level === 5 && textArray[1] === '2' && user.farms.length > 1) ||
-                     (level === 5 && textArray[1] === 'add_crop' && user.farms.length > 1)) {
-                const farmIndex = parseInt(textArray[2]) - 1;
-                const cropName = textArray[3];
-                const plantingDateStr = textArray[4];
-
-                let plantingDate = null;
-                if (plantingDateStr !== '0') {
-                    // Parse date in DD/MM/YYYY format
-                    const [day, month, year] = plantingDateStr.split('/').map(Number);
-                    plantingDate = new Date(year, month - 1, day);
-                }
-
-                // Add the crop to the farm
-                await prisma.crop.create({
-                    data: {
-                        name: cropName,
-                        plantingDate: plantingDate,
-                        farmId: user.farms[farmIndex].id
-                    }
-                });
-
-                response = `END Crop "${cropName}" has been added to farm "${user.farms[farmIndex].name}" successfully!`;
-                return response;
-            }
-
             // Get crop advice - select crop
-            else if (level === 2 && textArray[1] === '3') {
+            else if (level === 2 && textArray[1] === '2') {
                 // Collect all crops from all farms
                 const allCrops = [];
                 user.farms.forEach(farm => {
@@ -232,7 +128,7 @@ const CropManagement = {
             }
 
             // Get crop advice - display advice
-            else if (level === 3 && textArray[1] === '3') {
+            else if (level === 3 && textArray[1] === '2') {
                 // Collect all crops from all farms
                 const allCrops = [];
                 user.farms.forEach(farm => {
@@ -261,6 +157,7 @@ const CropManagement = {
                 await prisma.cropAdvice.create({
                     data: {
                         cropId: crop.id,
+                        name: crop.name,
                         userId: user.id,
                         advice: advice,
                         weatherCondition: weatherData.description
@@ -276,7 +173,7 @@ const CropManagement = {
             }
 
             // Crop calendar - main menu
-            else if (level === 2 && textArray[1] === '4') {
+            else if (level === 2 && textArray[1] === '3') {
                 response = `CON Crop Calendar:
                 1. View recommended crops for current season
                 2. Get planting advice for a specific crop
@@ -285,7 +182,7 @@ const CropManagement = {
             }
 
             // Crop calendar - view recommended crops
-            else if (level === 3 && textArray[1] === '4' && textArray[2] === '1') {
+            else if (level === 3 && textArray[1] === '3' && textArray[2] === '1') {
                 try {
                     // Get recommended crops for the user's location
                     const recommendedCrops = await getRecommendedCrops(user.location);
@@ -320,7 +217,7 @@ const CropManagement = {
             }
 
             // Crop calendar - get planting advice (select crop)
-            else if (level === 3 && textArray[1] === '4' && textArray[2] === '2') {
+            else if (level === 3 && textArray[1] === '3' && textArray[2] === '2') {
                 // If user has crops, let them select from their crops
                 if (user.farms.some(farm => farm.crops.length > 0)) {
                     // Collect all crops from all farms
@@ -347,7 +244,7 @@ const CropManagement = {
             }
 
             // Crop calendar - get planting advice for selected crop
-            else if (level === 4 && textArray[1] === '4' && textArray[2] === '2') {
+            else if (level === 4 && textArray[1] === '3' && textArray[2] === '2') {
                 try {
                     let cropName;
                     let location = user.location;
@@ -396,7 +293,7 @@ const CropManagement = {
             }
 
             // Crop calendar - get planting advice for manually entered crop
-            else if (level === 5 && textArray[1] === '4' && textArray[2] === '2') {
+            else if (level === 5 && textArray[1] === '3' && textArray[2] === '2') {
                 try {
                     const cropName = textArray[4];
                     const location = user.location;
@@ -413,19 +310,18 @@ const CropManagement = {
             }
 
             // Crop calendar - back to crop management
-            else if (level === 3 && textArray[1] === '4' && textArray[2] === '3') {
+            else if (level === 3 && textArray[1] === '3' && textArray[2] === '3') {
                 // Return to crop management menu
                 response = `CON Crop Management:
                 1. View all crops
-                2. Add a new crop
-                3. Get crop advice
-                4. Crop calendar
-                5. Back to Main Menu`;
+                2. Get crop advice
+                3. Crop calendar
+                4. Back to Main Menu`;
                 return response;
             }
 
             // Back to Main Menu
-            else if (level === 2 && textArray[1] === '5') {
+            else if (level === 2 && textArray[1] === '4') {
                 // This will be handled by the main menu logic
                 return "CON";
             }

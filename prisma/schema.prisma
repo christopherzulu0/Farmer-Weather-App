@@ -15,7 +15,6 @@ model User {
   name         String
   phoneNumber  String         @unique
   email        String?
-  pin          String
   role         String         @default("Farmer")
   location     String
   createdAt    DateTime       @default(now())
@@ -40,7 +39,7 @@ model Farm {
 model Crop {
   id           Int            @id @default(autoincrement())
   name         String
-  plantingDate DateTime?
+  plantingDate String?
   harvestDate  DateTime?
   farmId       Int
   farm         Farm           @relation(fields: [farmId], references: [id])
@@ -74,6 +73,7 @@ model WeatherAlert {
 model CropAdvice {
   id           Int            @id @default(autoincrement())
   cropId       Int
+  name         String
   crop         Crop           @relation(fields: [cropId], references: [id])
   userId       Int
   user         User           @relation(fields: [userId], references: [id])

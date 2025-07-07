@@ -54,6 +54,41 @@ const fallbackCropDatabase = {
         plantingSeasons: [
             { name: 'Rainy season', startMonth: 10, endMonth: 12 } // Oct-Dec
         ]
+    },
+    // Common crops with basic data
+    'maize': {
+        growingPeriod: { min: 90, max: 120 },
+        optimalTemp: { min: 18, max: 30 },
+        waterRequirement: { min: 500, max: 800 },
+        plantingSeasons: [
+            { name: 'Early season', startMonth: 9, endMonth: 11 }, // Sep-Nov
+            { name: 'Late season', startMonth: 1, endMonth: 3 }    // Jan-Mar
+        ]
+    },
+    'rice': {
+        growingPeriod: { min: 100, max: 150 },
+        optimalTemp: { min: 20, max: 35 },
+        waterRequirement: { min: 1000, max: 1500 },
+        plantingSeasons: [
+            { name: 'Rainy season', startMonth: 11, endMonth: 2 }  // Nov-Feb
+        ]
+    },
+    'beans': {
+        growingPeriod: { min: 60, max: 90 },
+        optimalTemp: { min: 15, max: 25 },
+        waterRequirement: { min: 300, max: 500 },
+        plantingSeasons: [
+            { name: 'Early season', startMonth: 9, endMonth: 11 }, // Sep-Nov
+            { name: 'Late season', startMonth: 2, endMonth: 4 }    // Feb-Apr
+        ]
+    },
+    'sorghum': {
+        growingPeriod: { min: 100, max: 130 },
+        optimalTemp: { min: 20, max: 35 },
+        waterRequirement: { min: 400, max: 600 },
+        plantingSeasons: [
+            { name: 'Rainy season', startMonth: 10, endMonth: 12 } // Oct-Dec
+        ]
     }
 };
 
@@ -67,7 +102,33 @@ async function getCropInfo(cropName) {
         // Check if OpenAI is available
         if (!openai) {
             console.warn('OpenAI client not available. Using fallback data for crop information.');
-            return { ...fallbackCropDatabase.default, name: cropName.toLowerCase() };
+            const cropKey = cropName.toLowerCase();
+            const fallbackData = fallbackCropDatabase[cropKey] || fallbackCropDatabase.default;
+            return { ...fallbackData, name: cropKey };
+        }
+
+        // Check if we recently hit a rate limit (within last 5 minutes)
+        if (global.lastRateLimit && (Date.now() - global.lastRateLimit) < 300000) {
+            console.warn('OpenAI rate limit recently hit. Using cached data or fallback.');
+            // Try to get from database cache first
+            try {
+                const cachedInfo = await prisma.cropInfo.findUnique({
+                    where: { name: cropName.toLowerCase() }
+                });
+
+                if (cachedInfo) {
+                    console.log(`Using cached crop info for ${cropName} (rate limit active)`);
+                    return JSON.parse(cachedInfo.data);
+                }
+            } catch (dbError) {
+                console.warn('Could not retrieve crop info from database:', dbError.message);
+            }
+
+            // Fall back to default values
+            console.log(`Using fallback data for ${cropName} (rate limit active)`);
+            const cropKey = cropName.toLowerCase();
+            const fallbackData = fallbackCropDatabase[cropKey] || fallbackCropDatabase.default;
+            return { ...fallbackData, name: cropKey };
         }
 
         // Use OpenAI to get crop information
@@ -149,6 +210,12 @@ async function getCropInfo(cropName) {
     } catch (error) {
         console.error(`Error getting crop information for ${cropName}:`, error);
 
+        // Check if it's a rate limit error
+        if (error.message && error.message.includes('RateLimitError')) {
+            console.warn(`OpenAI rate limit reached for ${cropName}. Using cached data or fallback.`);
+            global.lastRateLimit = Date.now(); // Track rate limit
+        }
+
         // Try to get from database cache first
         try {
             const cachedInfo = await prisma.cropInfo.findUnique({
@@ -156,6 +223,7 @@ async function getCropInfo(cropName) {
             });
 
             if (cachedInfo) {
+                console.log(`Using cached crop info for ${cropName}`);
                 return JSON.parse(cachedInfo.data);
             }
         } catch (dbError) {
@@ -163,7 +231,10 @@ async function getCropInfo(cropName) {
         }
 
         // Fall back to default values if all else fails
-        return { ...fallbackCropDatabase.default, name: cropName.toLowerCase() };
+        console.log(`Using fallback data for ${cropName}`);
+        const cropKey = cropName.toLowerCase();
+        const fallbackData = fallbackCropDatabase[cropKey] || fallbackCropDatabase.default;
+        return { ...fallbackData, name: cropKey };
     }
 }
 
@@ -515,6 +586,14 @@ async function getRecommendedCrops(location) {
             })).slice(0, 3) // Just include next 3 days
         };
 
+        // Check if we recently hit a rate limit (within last 5 minutes)
+        if (global.lastRateLimit && (Date.now() - global.lastRateLimit) < 300000) {
+            console.warn('OpenAI rate limit recently hit. Using traditional crop recommendations.');
+            const currentWeather = await getCurrentWeather(location);
+            const currentDate = new Date();
+            return getTraditionalRecommendedCrops(location, currentWeather, currentDate);
+        }
+
         // Use OpenAI to get recommended crops
         const response = await openai.chat.completions.create({
             model: "gpt-3.5-turbo",
@@ -593,10 +672,17 @@ async function getRecommendedCrops(location) {
     } catch (error) {
         console.error('Error getting AI crop recommendations:', error);
 
+        // Check if it's a rate limit error
+        if (error.message && error.message.includes('RateLimitError')) {
+            console.warn('OpenAI rate limit reached for crop recommendations. Using traditional method.');
+            global.lastRateLimit = Date.now(); // Track rate limit
+        }
+
         // Fall back to traditional method
         try {
             const currentWeather = await getCurrentWeather(location);
             const currentDate = new Date();
+            console.log('Using traditional crop recommendations due to AI unavailability');
             return getTraditionalRecommendedCrops(location, currentWeather, currentDate);
         } catch (fallbackError) {
             console.error('Traditional crop recommendation method also failed:', fallbackError);

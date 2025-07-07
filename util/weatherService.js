@@ -45,10 +45,18 @@ async function getCurrentWeather(location) {
 
     const currentData = currentResponse.data[0];
 
+    // Handle humidity data properly for current weather
+    let humidityValue = 0;
+    if (typeof currentData.RelativeHumidity === 'object' && currentData.RelativeHumidity !== null) {
+      humidityValue = currentData.RelativeHumidity.Average || currentData.RelativeHumidity.Minimum || currentData.RelativeHumidity.Maximum || 0;
+    } else if (typeof currentData.RelativeHumidity === 'number') {
+      humidityValue = currentData.RelativeHumidity;
+    }
+    
     const weatherData = {
       location: locationName,
       temperature: currentData.Temperature.Metric.Value,
-      humidity: currentData.RelativeHumidity,
+      humidity: humidityValue,
       description: currentData.WeatherText,
       windSpeed: currentData.Wind.Speed.Metric.Value,
       rainfall: currentData.Precip1hr?.Metric?.Value || 0,
@@ -57,9 +65,20 @@ async function getCurrentWeather(location) {
     };
 
     // Store weather data in database
-    await prisma.weatherData.create({
-      data: weatherData
-    });
+    const skipDbStorage = process.env.SKIP_WEATHER_DB_STORAGE === 'true';
+    
+    if (!skipDbStorage) {
+      try {
+        await prisma.weatherData.create({
+          data: weatherData
+        });
+      } catch (dbError) {
+        console.warn('Failed to store current weather data in database:', dbError.message);
+        // Continue processing even if database storage fails
+      }
+    } else {
+      console.log('Skipping weather database storage as configured');
+    }
 
     return weatherData;
   } catch (error) {
@@ -74,22 +93,88 @@ async function getCurrentWeather(location) {
       console.error('3. Updated the WEATHER_API_KEY value in your .env file');
       throw new Error(`Weather API key error: ${error.message}`);
     }
+    
+    // For service unavailable (503) or other API errors, use fallback data
+    if (error.response && error.response.status === 503) {
+      console.warn('Weather API service unavailable (503). Using fallback data.');
+      return getFallbackWeatherData(location);
+    }
+    
     // Add more context to the error
     else if (error.code === 'ECONNREFUSED') {
-      throw new Error(`Weather API connection refused: ${error.message}`);
+      console.warn('Weather API connection refused. Using fallback data.');
+      return getFallbackWeatherData(location);
     } else if (error.code === 'ENOTFOUND') {
-      throw new Error(`Weather API host not found: ${error.message}`);
+      console.warn('Weather API host not found. Using fallback data.');
+      return getFallbackWeatherData(location);
     } else if (error.response) {
-      throw new Error(`Weather API error (${error.response.status}): ${error.message}`);
+      console.warn(`Weather API error (${error.response.status}). Using fallback data.`);
+      return getFallbackWeatherData(location);
     } else if (error.request) {
-      throw new Error(`Weather API request failed: ${error.message}`);
+      console.warn('Weather API request failed. Using fallback data.');
+      return getFallbackWeatherData(location);
     } else if (error.message && error.message.includes('timeout')) {
-      throw new Error(`Weather API request timed out: ${error.message}`);
+      console.warn('Weather API request timed out. Using fallback data.');
+      return getFallbackWeatherData(location);
     }
 
-    // If it's another type of error, rethrow with additional context
-    throw new Error(`Weather API error: ${error.message}`);
+    // If it's another type of error, use fallback data
+    console.warn('Unknown weather API error. Using fallback data.');
+    return getFallbackWeatherData(location);
   }
+}
+
+/**
+ * Get fallback weather data when API is unavailable
+ * @param {string} location - The location
+ * @returns {Object} - Fallback weather data
+ */
+function getFallbackWeatherData(location) {
+  console.warn(`Weather API unavailable. Using fallback data for ${location}`);
+  
+  // Get current month for seasonal adjustments
+  const currentMonth = new Date().getMonth() + 1;
+  
+  // Basic fallback data based on typical conditions
+  let temperature = 25; // Default moderate temperature
+  let humidity = 60; // Default moderate humidity
+  let description = "Partly cloudy";
+  let windSpeed = 10;
+  let rainfall = 0;
+  
+  // Adjust based on season (basic seasonal logic)
+  if (currentMonth >= 12 || currentMonth <= 2) {
+    // Winter months
+    temperature = 15;
+    humidity = 70;
+    description = "Cool and clear";
+  } else if (currentMonth >= 3 && currentMonth <= 5) {
+    // Spring months
+    temperature = 20;
+    humidity = 65;
+    description = "Mild and pleasant";
+  } else if (currentMonth >= 6 && currentMonth <= 8) {
+    // Summer months
+    temperature = 30;
+    humidity = 55;
+    description = "Warm and sunny";
+  } else if (currentMonth >= 9 && currentMonth <= 11) {
+    // Fall months
+    temperature = 22;
+    humidity = 60;
+    description = "Mild with occasional rain";
+  }
+  
+  return {
+    location: location,
+    temperature: temperature,
+    humidity: humidity,
+    description: description,
+    windSpeed: windSpeed,
+    rainfall: rainfall,
+    date: new Date(),
+    forecast: false
+  };
 }
 
 /**
@@ -140,19 +225,38 @@ async function getWeatherForecast(location) {
     });
 
     // Store forecast data in database (optional)
-    for (const forecast of forecastData) {
-      await prisma.weatherData.create({
-        data: {
-          location: forecast.location,
-          temperature: (forecast.minTemperature + forecast.maxTemperature) / 2, // Average temp
-          humidity: forecast.humidity || 0,
-          description: forecast.dayDescription,
-          windSpeed: forecast.windSpeed,
-          rainfall: forecast.rainfall,
-          date: forecast.date,
-          forecast: true
+    const skipDbStorage = process.env.SKIP_WEATHER_DB_STORAGE === 'true';
+    
+    if (!skipDbStorage) {
+      for (const forecast of forecastData) {
+        try {
+          // Handle humidity data properly
+          let humidityValue = 0;
+          if (typeof forecast.humidity === 'object' && forecast.humidity !== null) {
+            humidityValue = forecast.humidity.Average || forecast.humidity.Minimum || forecast.humidity.Maximum || 0;
+          } else if (typeof forecast.humidity === 'number') {
+            humidityValue = forecast.humidity;
+          }
+          
+          await prisma.weatherData.create({
+            data: {
+              location: forecast.location,
+              temperature: (forecast.minTemperature + forecast.maxTemperature) / 2, // Average temp
+              humidity: humidityValue,
+              description: forecast.dayDescription,
+              windSpeed: forecast.windSpeed,
+              rainfall: forecast.rainfall,
+              date: forecast.date,
+              forecast: true
+            }
+          });
+        } catch (dbError) {
+          console.warn('Failed to store forecast data in database:', dbError.message);
+          // Continue processing even if database storage fails
         }
-      });
+      }
+    } else {
+      console.log('Skipping weather database storage as configured');
     }
 
     return forecastData;
@@ -169,21 +273,34 @@ async function getWeatherForecast(location) {
       console.error('Note: The free tier of AccuWeather API has limited calls per day.');
       throw new Error(`Weather forecast API key error: ${error.message}`);
     }
+    
+    // For service unavailable (503) or other API errors, return empty forecast
+    if (error.response && error.response.status === 503) {
+      console.warn('Weather forecast API service unavailable (503). Returning empty forecast.');
+      return [];
+    }
+    
     // Add more context to the error
     else if (error.code === 'ECONNREFUSED') {
-      throw new Error(`Weather forecast API connection refused: ${error.message}`);
+      console.warn('Weather forecast API connection refused. Returning empty forecast.');
+      return [];
     } else if (error.code === 'ENOTFOUND') {
-      throw new Error(`Weather forecast API host not found: ${error.message}`);
+      console.warn('Weather forecast API host not found. Returning empty forecast.');
+      return [];
     } else if (error.response) {
-      throw new Error(`Weather forecast API error (${error.response.status}): ${error.message}`);
+      console.warn(`Weather forecast API error (${error.response.status}). Returning empty forecast.`);
+      return [];
     } else if (error.request) {
-      throw new Error(`Weather forecast API request failed: ${error.message}`);
+      console.warn('Weather forecast API request failed. Returning empty forecast.');
+      return [];
     } else if (error.message && error.message.includes('timeout')) {
-      throw new Error(`Weather forecast API request timed out: ${error.message}`);
+      console.warn('Weather forecast API request timed out. Returning empty forecast.');
+      return [];
     }
 
-    // If it's another type of error, rethrow with additional context
-    throw new Error(`Weather forecast API error: ${error.message}`);
+    // If it's another type of error, return empty forecast
+    console.warn('Unknown weather forecast API error. Returning empty forecast.');
+    return [];
   }
 }
 
@@ -254,5 +371,6 @@ module.exports = {
   getCurrentWeather,
   getWeatherForecast,
   getAgriculturalAdvice,
-  checkWeatherAlerts
+  checkWeatherAlerts,
+  getFallbackWeatherData
 };
