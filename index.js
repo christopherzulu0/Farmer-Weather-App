@@ -99,10 +99,11 @@ router.post("/", async (req, res) => {
             response = await Weather(weatherAlertsArray, phoneNumber);
             break;
           case "4":
-            // Directly access add new crop functionality
             const addCropArray = [...textArray];
-            // Add "add_crop" as a special signal
-            addCropArray.push("add_crop");
+            if (!addCropArray.includes("add_crop")) {
+              // Insert "add_crop" after the first element
+              addCropArray.splice(1, 0, "add_crop");
+            }
             response = await Crops(addCropArray, phoneNumber);
             break;
           case "5":

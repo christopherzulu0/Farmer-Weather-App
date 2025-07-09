@@ -4,6 +4,7 @@ const { getPlantingAdvice, getRecommendedCrops } = require('../util/cropCalendar
 
 const CropManagement = {
     Crops: async (textArray, phoneNumber) => {
+        console.log("DEBUG: textArray for Crops:", textArray, "phoneNumber:", phoneNumber);
         const level = textArray.length;
         let response = "";
 
@@ -324,6 +325,54 @@ const CropManagement = {
             else if (level === 2 && textArray[1] === '4') {
                 // This will be handled by the main menu logic
                 return "CON";
+            }
+
+            // --- Add New Crop Flow ---
+            else if (textArray.includes('add_crop')) {
+                const addCropIdx = textArray.indexOf('add_crop');
+                // Step 1: Prompt for crop name
+                if (textArray.length === addCropIdx + 1) {
+                    response = `CON Enter the name of the new crop:`;
+                    return response;
+                }
+                // Step 2: If user has multiple farms, prompt for farm selection or add crop if only one farm
+                else if (textArray.length === addCropIdx + 2) {
+                    const cropName = textArray[addCropIdx + 1];
+                    if (user.farms.length === 1) {
+                        // Only one farm, add crop directly
+                        const farm = user.farms[0];
+                        await prisma.crop.create({
+                            data: {
+                                name: cropName,
+                                farmId: farm.id
+                            }
+                        });
+                        response = `END Crop "${cropName}" has been added to your farm "${farm.name}" successfully!`;
+                        return response;
+                    } else {
+                        // Multiple farms, prompt for selection
+                        response = `CON Select the farm to add "${cropName}":\n` +
+                            user.farms.map((farm, idx) => `${idx + 1}. ${farm.name}`).join('\n');
+                        return response;
+                    }
+                }
+                // Step 3: Add crop to selected farm
+                else if (textArray.length === addCropIdx + 3) {
+                    const cropName = textArray[addCropIdx + 1];
+                    const farmIndex = parseInt(textArray[addCropIdx + 2]) - 1;
+                    if (isNaN(farmIndex) || farmIndex < 0 || farmIndex >= user.farms.length) {
+                        return "END Invalid farm selection.";
+                    }
+                    const farm = user.farms[farmIndex];
+                    await prisma.crop.create({
+                        data: {
+                            name: cropName,
+                            farmId: farm.id
+                        }
+                    });
+                    response = `END Crop "${cropName}" has been added to your farm "${farm.name}" successfully!`;
+                    return response;
+                }
             }
 
             else {
