@@ -13,7 +13,8 @@
     "test:at": "node util/test-at-connection.js",
     "test:crop-calendar": "node test-crop-calendar.js",
     "test:openai": "node test-openai-setup.js",
-    "build": "prisma generate"
+    "build": "prisma generate",
+    "vercel-build": "prisma generate"
   },
   "dependencies": {
     "@prisma/client": "^5.0.0",
