@@ -4,7 +4,6 @@ CREATE TABLE "User" (
     "name" TEXT NOT NULL,
     "phoneNumber" TEXT NOT NULL,
     "email" TEXT,
-    "pin" TEXT NOT NULL,
     "role" TEXT NOT NULL DEFAULT 'Farmer',
     "location" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -30,7 +29,7 @@ CREATE TABLE "Farm" (
 CREATE TABLE "Crop" (
     "id" SERIAL NOT NULL,
     "name" TEXT NOT NULL,
-    "plantingDate" TIMESTAMP(3),
+    "plantingDate" TEXT,
     "harvestDate" TIMESTAMP(3),
     "farmId" INTEGER NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -70,6 +69,7 @@ CREATE TABLE "WeatherAlert" (
 CREATE TABLE "CropAdvice" (
     "id" SERIAL NOT NULL,
     "cropId" INTEGER NOT NULL,
+    "name" TEXT NOT NULL,
     "userId" INTEGER NOT NULL,
     "advice" TEXT NOT NULL,
     "weatherCondition" TEXT NOT NULL,
@@ -78,8 +78,22 @@ CREATE TABLE "CropAdvice" (
     CONSTRAINT "CropAdvice_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "CropInfo" (
+    "id" SERIAL NOT NULL,
+    "name" TEXT NOT NULL,
+    "data" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "CropInfo_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "User_phoneNumber_key" ON "User"("phoneNumber");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "CropInfo_name_key" ON "CropInfo"("name");
 
 -- AddForeignKey
 ALTER TABLE "Farm" ADD CONSTRAINT "Farm_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
