@@ -4,7 +4,7 @@
   "rewrites": [{ "source": "/api/(.*)", "destination": "/api" }],
   "builds": [
     {
-      "src": "app.js",
+      "src": "/app.js",
       "use": "@vercel/node",
       "config": {
         "buildCommand": "npm run vercel-build"
@@ -14,7 +14,7 @@
   "routes": [
     {
       "src": "/(.*)",
-      "dest": "app.js"
+      "dest": "/app.js"
     }
   ]
 }
