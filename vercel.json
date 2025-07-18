@@ -3,7 +3,7 @@
   "installCommand": "npm install",
   "builds": [
     {
-      "src": "app.js",
+      "api": "package.json",
       "use": "@vercel/node",
       "config": {
         "buildCommand": "npm run vercel-build"
@@ -12,7 +12,7 @@
   ],
   "routes": [
     {
-      "src": "/(.*)",
+      "api": "/(.*)",
       "dest": "app.js"
     }
   ]
