@@ -3,11 +3,11 @@ const ussdRoute = require("./index");
 const bodyParser = require("body-parser");
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+// const PORT = process.env.PORT || 3000; // Not needed for Vercel
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 
 app.use("/", ussdRoute);
 
-app.listen(PORT, () => console.log(`running on localhost:${PORT}`));
+module.exports = app; // Export the app for Vercel
