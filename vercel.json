@@ -1,20 +1,15 @@
 {
   "version": 2,
-  "installCommand": "npm install",
-  "rewrites": [{ "source": "/api/(.*)", "destination": "/api" }],
   "builds": [
     {
-      "src": "/app.js",
-      "use": "@vercel/node",
-      "config": {
-        "buildCommand": "npm run vercel-build"
-      }
+      "src": "app.js",
+      "use": "@vercel/node"
     }
   ],
   "routes": [
     {
       "src": "/(.*)",
-      "dest": "/app.js"
+      "dest": "app.js"
     }
   ]
 }
