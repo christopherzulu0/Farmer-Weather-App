@@ -12,27 +12,8 @@ const { Crops } = require("./pages/CropManagement");
 const { Notify } = require("./pages/Notifications");
 
 const prisma = require('./prisma/client');
-const dotenv = require("dotenv");
-const cors = require("cors");
-const app = express();
 
-i18n.configure({
-  defaultLocale: "en", // Set the default language
-  locales: ["en", "fr", "es", "bem", "nya"], // Available languages
-  directory: __dirname + "/locales", // Path to the locales folder
-  objectNotation: true, // Enable object notation
-});
-
-// Set the default language for the app
-app.use(i18n.init);
-
-// Configuring Express
-dotenv.config();
-app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
-
-
+// i18n configuration will be done in app.js
 
 router.post("/", async (req, res) => {
   try {
