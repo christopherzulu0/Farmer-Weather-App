@@ -46,52 +46,36 @@ Welcome to Farmers Weather Service
       case 1:
         response = "CON What is your full name?";
         break;
-      // case 2:
-      //   response = "CON What is your email address? (optional, reply with 0 to skip)";
-      //   break;
+   
       case 2:
         response = "CON What is your location/district?";
         break;
       case 3:
         response = "CON What is your main crop?";
         break;
-      // case 4:
-      //   response = "CON What is the size of your farm? (in hectares)";
-      //   break;
-      // case 6:
-      //   response = "CON Set a login PIN (4 Digits)";
-      //   break;
-      // case 7:
-      //   response = "CON Please confirm your PIN:";
-      //   break;
       case 4:
         // const email = textArray[2] === '0' ? 'Not provided' : textArray[2];
         response = `CON Confirm Your Details:
-Name: ${textArray[1]}
-// Email: ${email}
-Location: ${textArray[2]}
-Main Crop: ${textArray[3]}
-// Farm Size: ${textArray[5]} hectares
-
-1. Confirm & continue
-2. Cancel & start over`;
+            Name: ${textArray[1]}
+            Location: ${textArray[2]}
+            Main Crop: ${textArray[3]}
+            
+            1. Confirm & continue
+            2. Cancel & start over`;
         break;
       case 5:
         if(textArray[4] == 1){
             try {
               console.log('Attempting to register user:', {
                 name: textArray[1],
-                // email: textArray[2] === '0' ? null : textArray[2],
+            
                 phoneNumber: phoneNumber,
                 location: textArray[2],
                 mainCrop: textArray[3],
-                // farmSize: textArray[5]
+            
               });
 
-              // Hash the PIN using crypto instead of bcrypt
-           
-
-              // Create user in database using Prisma
+            
               // const email = textArray[2] === '0' ? null : textArray[2];
               const user = await prisma.user.create({
                 data: {
