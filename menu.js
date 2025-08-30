@@ -64,20 +64,20 @@ Welcome to Farmers Weather Service
       // case 7:
       //   response = "CON Please confirm your PIN:";
       //   break;
-      case 5:
-        const email = textArray[2] === '0' ? 'Not provided' : textArray[2];
+      case 4:
+        // const email = textArray[2] === '0' ? 'Not provided' : textArray[2];
         response = `CON Confirm Your Details:
 Name: ${textArray[1]}
 // Email: ${email}
-Location: ${textArray[3]}
-Main Crop: ${textArray[4]}
+Location: ${textArray[2]}
+Main Crop: ${textArray[3]}
 // Farm Size: ${textArray[5]} hectares
 
 1. Confirm & continue
 2. Cancel & start over`;
         break;
-      case 6:
-        if(textArray[5] == 1){
+      case 5:
+        if(textArray[4] == 1){
             try {
               console.log('Attempting to register user:', {
                 name: textArray[1],
@@ -136,7 +136,7 @@ Main Crop: ${textArray[4]}
               }
             }
           // }
-        } else if (textArray[6] == 2) {
+        } else if (textArray[4] == 2) {
           // User chose to cancel and start over
           response = "END Registration cancelled. Please dial the service code again to restart registration.";
         } else {
