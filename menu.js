@@ -6,64 +6,12 @@ const i18n = require("i18n");
 const { getCurrentWeather, getAgriculturalAdvice } = require('./util/weatherService');
 const { sendWeatherAlert } = require('./util/africasTalking');
 
-// Helper function to hash passwords using crypto instead of bcrypt
-// const hashPassword = (password) => {
-//   const salt = crypto.randomBytes(16).toString('hex');
-//   const hash = crypto.pbkdf2Sync(password, salt, 1000, 64, 'sha512').toString('hex');
-//   return `${salt}:${hash}`;
-// };
 
-// Helper function to verify passwords
-// const verifyPassword = (password, hashedPassword) => {
-//   const [salt, storedHash] = hashedPassword.split(':');
-//   const hash = crypto.pbkdf2Sync(password, salt, 1000, 64, 'sha512').toString('hex');
-//   return storedHash === hash;
-// };
 
 i18n.configure({
   defaultLocale: 'en', // Set the default language code here
   directory: __dirname + '/locales', // Specify the directory where your language files are located
 });
-
-// Function to get crop advice based on weather
-// const getCropAdvice = async (cropType, location) => {
-//   try {
-//     // Get current weather for the location
-//     const weatherData = await getCurrentWeather(location);
-
-//     // Get agricultural advice based on weather and crop type
-//     const advice = getAgriculturalAdvice(cropType, weatherData);
-
-//     return {
-//       cropType,
-//       location,
-//       weather: weatherData,
-//       advice
-//     };
-//   } catch (error) {
-//     console.error('Error getting crop advice:', error);
-//     return {
-//       cropType,
-//       location,
-//       error: 'Unable to fetch weather data. Please try again later.'
-//     };
-//   }
-// };
-
-// // Function to get farm information
-// const getFarmInfo = async (userId) => {
-//   try {
-//     const farms = await prisma.farm.findMany({
-//       where: { userId: parseInt(userId) },
-//       include: { crops: true }
-//     });
-
-//     return farms;
-//   } catch (error) {
-//     console.error('Error fetching farm information:', error);
-//     return [];
-//   }
-// };
 
 const menu = {
   MainMenu: (userName, userRole) => {
@@ -98,59 +46,59 @@ Welcome to Farmers Weather Service
       case 1:
         response = "CON What is your full name?";
         break;
+      // case 2:
+      //   response = "CON What is your email address? (optional, reply with 0 to skip)";
+      //   break;
       case 2:
-        response = "CON What is your email address? (optional, reply with 0 to skip)";
-        break;
-      case 3:
         response = "CON What is your location/district?";
         break;
-      case 4:
+      case 3:
         response = "CON What is your main crop?";
         break;
-      case 5:
-        response = "CON What is the size of your farm? (in hectares)";
-        break;
+      // case 4:
+      //   response = "CON What is the size of your farm? (in hectares)";
+      //   break;
       // case 6:
       //   response = "CON Set a login PIN (4 Digits)";
       //   break;
       // case 7:
       //   response = "CON Please confirm your PIN:";
       //   break;
-      case 6:
+      case 5:
         const email = textArray[2] === '0' ? 'Not provided' : textArray[2];
         response = `CON Confirm Your Details:
 Name: ${textArray[1]}
-Email: ${email}
+// Email: ${email}
 Location: ${textArray[3]}
 Main Crop: ${textArray[4]}
-Farm Size: ${textArray[5]} hectares
+// Farm Size: ${textArray[5]} hectares
 
 1. Confirm & continue
 2. Cancel & start over`;
         break;
-      case 7:
-        if(textArray[6] == 1){
+      case 6:
+        if(textArray[5] == 1){
             try {
               console.log('Attempting to register user:', {
                 name: textArray[1],
-                email: textArray[2] === '0' ? null : textArray[2],
+                // email: textArray[2] === '0' ? null : textArray[2],
                 phoneNumber: phoneNumber,
-                location: textArray[3],
-                mainCrop: textArray[4],
-                farmSize: textArray[5]
+                location: textArray[2],
+                mainCrop: textArray[3],
+                // farmSize: textArray[5]
               });
 
               // Hash the PIN using crypto instead of bcrypt
            
 
               // Create user in database using Prisma
-              const email = textArray[2] === '0' ? null : textArray[2];
+              // const email = textArray[2] === '0' ? null : textArray[2];
               const user = await prisma.user.create({
                 data: {
                   name: textArray[1],
-                  email: email,
+                  // email: email,
                   phoneNumber: phoneNumber,
-                  location: textArray[3],       
+                  location: textArray[2],       
                   role: 'Farmer'
                 }
               });
@@ -161,12 +109,12 @@ Farm Size: ${textArray[5]} hectares
               const farm = await prisma.farm.create({
                 data: {
                   name: `${textArray[1]}'s Farm`,
-                  location: textArray[3],
-                  size: parseFloat(textArray[5]),
+                  location: textArray[2],
+                  // size: parseFloat(textArray[5]),
                   userId: user.id,
                   crops: {
                     create: [{
-                      name: textArray[4]
+                      name: textArray[3]
                     }]
                   }
                 }
@@ -188,7 +136,7 @@ Farm Size: ${textArray[5]} hectares
               }
             }
           // }
-        } else if (textArray[8] == 2) {
+        } else if (textArray[6] == 2) {
           // User chose to cancel and start over
           response = "END Registration cancelled. Please dial the service code again to restart registration.";
         } else {
